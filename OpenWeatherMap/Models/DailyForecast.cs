@@ -1,4 +1,5 @@
 ﻿using Newtonsoft.Json.Linq;
+using OpenWeatherMap.Enums;
 using OpenWeatherMap.Helper;
 using System;
 using System.Collections.Generic;
@@ -26,7 +27,7 @@ namespace OpenWeatherMap.Models
         public decimal Rain { get; set; }
         public decimal Snow { get; set; }
         public List<Weather> Weather { get; set; } = new List<Weather>();
-        public DailyForecast(JToken jToken)
+        public DailyForecast(JToken jToken, Units? unit)
         {
             if (jToken != null)
             {
@@ -35,8 +36,8 @@ namespace OpenWeatherMap.Models
                 this.Sunset = DateTimeHelper.ConvertUnixToDateTime(double.Parse(jToken.SelectToken("sunset").ToString()));
                 this.Moonrise = DateTimeHelper.ConvertUnixToDateTime(double.Parse(jToken.SelectToken("moonrise").ToString()));
                 this.Moonset = DateTimeHelper.ConvertUnixToDateTime(double.Parse(jToken.SelectToken("moonset").ToString()));
-                this.Temperature = new Temperature(jToken.SelectToken("temp"));
-                this.FeelsLike = new FeelsLike(jToken.SelectToken("feels_like"));
+                this.Temperature = new Temperature(jToken.SelectToken("temp"), unit);
+                this.FeelsLike = new FeelsLike(jToken.SelectToken("feels_like"), unit);
                 this.Pressure = decimal.Parse(jToken.SelectToken("pressure").ToString());
                 this.Humidity = decimal.Parse(jToken.SelectToken("humidity").ToString());
                 this.DewPoint = decimal.Parse(jToken.SelectToken("dew_point").ToString());

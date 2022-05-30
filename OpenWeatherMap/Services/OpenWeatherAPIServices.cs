@@ -1,11 +1,13 @@
-﻿using OpenWeatherMap.Enums;
+﻿using Microsoft.Extensions.Caching.Distributed;
+using OpenWeatherMap.Enums;
 using OpenWeatherMap.Helper;
+using OpenWeatherMap.Interface;
 using OpenWeatherMap.Models;
 using System;
 using System.Collections.Generic;
-using System.IO;
 using System.Linq;
 using System.Net.Http;
+using System.Text;
 using System.Threading.Tasks;
 
 namespace OpenWeatherMap.Services
@@ -15,9 +17,11 @@ namespace OpenWeatherMap.Services
         private readonly string apiKey = "**API-KEY**"; 
         private readonly HttpClient httpClient;
         private bool _disposed;
+        private readonly IDistributedCache distributedCache;
         public OpenWeatherAPIServices()
         {
             httpClient = new HttpClient();
+            this.distributedCache = CacheProvider.GetCacheProvider();
         }
 
         private List<Location> GetLocations()
@@ -32,33 +36,36 @@ namespace OpenWeatherMap.Services
             return locations.FirstOrDefault(e => e.Id == Id);
         }
 
-        private Uri GenerateOneCallURL(decimal latitude, decimal longitude, Units? unit)
+        private Uri GenerateOneCallURL(decimal latitude, decimal longitude)
         {
-            string unitName = GetOpenWeatherMapUnitName(unit);
-            return new Uri($"https://api.openweathermap.org/data/2.5/onecall?units={unitName}&lat={latitude}&lon={longitude}&exclude=current,minutely,hourly,alerts&appid={apiKey}");                        
-        }
-
-        public string GetOpenWeatherMapUnitName(Units? unit)
-        {
-            switch(unit)
-            {
-                case Units.celsius:
-                    return "metric";
-                case Units.fahrenheit:
-                    return "imperial";
-                default:
-                    return string.Empty;                    
-            }
+            return new Uri($"https://api.openweathermap.org/data/2.5/onecall?lat={latitude}&lon={longitude}&exclude=current,minutely,hourly,alerts&appid={apiKey}");
         }
 
         public async Task<WeatherSummary> GetWeatherForecastAsync(decimal locationId, Units? unit = null)
         {
+            var cacheKey = locationId.ToString();
             var location = GetLocation(locationId);
+            var response = string.Empty;
 
             if (location != null)
             {
-                var response = await httpClient.GetStringAsync(GenerateOneCallURL(location.Coord.Lat, location.Coord.Lon, unit));
-                var summary = new WeatherSummary(response);
+                var redisWeatherForecast = await distributedCache.GetAsync(cacheKey);
+
+                if (redisWeatherForecast != null)
+                {
+                    response = Encoding.UTF8.GetString(redisWeatherForecast);
+                }
+                else
+                {
+                    response = await httpClient.GetStringAsync(GenerateOneCallURL(location.Coord.Lat, location.Coord.Lon));
+                    redisWeatherForecast = Encoding.UTF8.GetBytes(response);
+                    var options = new DistributedCacheEntryOptions()
+                        .SetAbsoluteExpiration(DateTime.Now.AddMinutes(10))
+                        .SetSlidingExpiration(TimeSpan.FromMinutes(2));
+                    await distributedCache.SetAsync(cacheKey, redisWeatherForecast, options);
+                }
+
+                var summary = new WeatherSummary(response, unit);
                 summary.Location = location;
                 return summary;
             }

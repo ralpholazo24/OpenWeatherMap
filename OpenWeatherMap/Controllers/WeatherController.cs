@@ -1,7 +1,9 @@
 ﻿using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Caching.Distributed;
 using OpenWeatherMap.BusinessLogic;
 using OpenWeatherMap.Enums;
+using OpenWeatherMap.Interface;
 using OpenWeatherMap.Models;
 using System;
 using System.Collections.Generic;
@@ -14,9 +16,14 @@ namespace OpenWeatherMap.Controllers
     [ApiController]
     public class WeatherController : ControllerBase
     {
+        public WeatherController(IDistributedCache distributedCache)
+        {
+            CacheProvider.RegisterCacheProvider(distributedCache);
+        }
+
         [HttpGet("Summary")]
         [Produces("application/json")]
-        public async Task<List<WeatherSummary>> Summary(string unit, decimal? temperature, string locations)
+        public async Task<List<WeatherSummary>> Summary(string unit, double? temperature, string locations)
         {
             try
             {

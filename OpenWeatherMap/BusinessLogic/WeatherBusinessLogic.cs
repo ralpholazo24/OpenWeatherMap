@@ -1,4 +1,5 @@
-﻿using OpenWeatherMap.Enums;
+﻿using Microsoft.Extensions.Caching.Distributed;
+using OpenWeatherMap.Enums;
 using OpenWeatherMap.Helper;
 using OpenWeatherMap.Models;
 using OpenWeatherMap.Services;
@@ -11,7 +12,7 @@ namespace OpenWeatherMap.BusinessLogic
 {
     public class WeatherBusinessLogic
     {
-        public async Task<List<WeatherSummary>> GetLocationsNextDayForecast(string unit, decimal? temperature, string locations)
+        public async Task<List<WeatherSummary>> GetLocationsNextDayForecast(string unit, double? temperature, string locations)
         {
             if (String.IsNullOrWhiteSpace(unit)) throw new ArgumentNullException("Unit is required.");
             else

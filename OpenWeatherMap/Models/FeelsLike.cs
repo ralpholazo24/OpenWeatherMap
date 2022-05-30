@@ -1,4 +1,6 @@
 ﻿using Newtonsoft.Json.Linq;
+using OpenWeatherMap.Enums;
+using OpenWeatherMap.Helper;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -8,17 +10,26 @@ namespace OpenWeatherMap.Models
 {
     public class FeelsLike
     {
-        public decimal Morning { get; set; }
-        public decimal Day { get; set; }
-        public decimal Eve { get; set; }
-        public decimal Night { get; set; }
+        public double Morning { get; set; }
+        public double Day { get; set; }
+        public double Eve { get; set; }
+        public double Night { get; set; }
 
-        public FeelsLike(JToken jToken)
+        public FeelsLike(JToken jToken, Units? unit)
         {
-            this.Morning = decimal.Parse(jToken.SelectToken("morn").ToString());
-            this.Day = decimal.Parse(jToken.SelectToken("day").ToString());
-            this.Eve = decimal.Parse(jToken.SelectToken("eve").ToString());
-            this.Night = decimal.Parse(jToken.SelectToken("night").ToString());
+            this.Morning = double.Parse(jToken.SelectToken("morn").ToString());
+            this.Day = double.Parse(jToken.SelectToken("day").ToString());
+            this.Eve = double.Parse(jToken.SelectToken("eve").ToString());
+            this.Night = double.Parse(jToken.SelectToken("night").ToString());
+            this.ConvertTemperatureUnit(unit);
+        }
+
+        private void ConvertTemperatureUnit(Units? unit)
+        {
+            this.Morning = TemperatureHelper.ConvertKelvin(this.Morning, unit);
+            this.Day = TemperatureHelper.ConvertKelvin(this.Day, unit);
+            this.Eve = TemperatureHelper.ConvertKelvin(this.Eve, unit);
+            this.Night = TemperatureHelper.ConvertKelvin(this.Night, unit);
         }
     }
 }
